@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Star, Trash2, Calendar, Tag } from 'lucide-react';
+import { Star, Trash2, Calendar, Tag, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -19,9 +18,10 @@ interface NoteCardProps {
   note: Note;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
+  onShare?: (noteTitle: string) => void;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onToggleFavorite, onDelete }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note, onToggleFavorite, onDelete, onShare }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -61,6 +61,16 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onToggleFavorite, onDelete })
             </div>
           </div>
           <div className="flex items-center gap-1 ml-2">
+            {onShare && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onShare(note.title)}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"

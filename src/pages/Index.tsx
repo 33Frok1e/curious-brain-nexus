@@ -1,12 +1,13 @@
-
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Brain, Tag, Calendar, Star } from 'lucide-react';
+import { Plus, Search, Brain, Tag, Calendar, Star, Share2, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import NoteCard from '@/components/NoteCard';
 import CreateNoteModal from '@/components/CreateNoteModal';
+import ShareModal from '@/components/ShareModal';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 interface Note {
   id: string;
@@ -52,6 +53,9 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareNoteTitle, setShareNoteTitle] = useState<string>('');
+  const [isAllNotesShare, setIsAllNotesShare] = useState(false);
   const { toast } = useToast();
 
   const allTags = useMemo(() => {
@@ -101,6 +105,23 @@ const Index = () => {
     });
   };
 
+  const handleShareAllNotes = () => {
+    setIsAllNotesShare(true);
+    setShareNoteTitle('');
+    setIsShareModalOpen(true);
+  };
+
+  const handleShareNote = (noteTitle: string) => {
+    setIsAllNotesShare(false);
+    setShareNoteTitle(noteTitle);
+    setIsShareModalOpen(true);
+  };
+
+  const handleLogout = () => {
+    // For now, just redirect to login
+    window.location.href = '/login';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100">
       {/* Header */}
@@ -118,13 +139,40 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Your knowledge companion</p>
               </div>
             </div>
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Note
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleShareAllNotes}
+                variant="outline"
+                className="hidden sm:flex items-center gap-2"
+              >
+                <Share2 className="h-4 w-4" />
+                Share Brain
+              </Button>
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Note
+              </Button>
+              <div className="flex items-center gap-1 ml-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <User className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-red-500"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -246,6 +294,13 @@ const Index = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateNote}
+      />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        noteTitle={shareNoteTitle}
+        isAllNotes={isAllNotesShare}
       />
     </div>
   );
