@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, Brain, Tag, Calendar, Star, Share2, User, LogOut } from 'lucide-react';
+
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Plus, Search, Brain, Tag, Calendar, Share2, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import NoteCard from '@/components/NoteCard';
 import CreateNoteModal from '@/components/CreateNoteModal';
 import ShareModal from '@/components/ShareModal';
 import Profile from '@/components/Profile';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
-import { LinkPreview } from '@/utils/linkUtils';
+import { LinkPreview, getDemoNotes } from '@/utils/linkUtils';
 
 interface Note {
   id: string;
@@ -22,37 +22,23 @@ interface Note {
   links?: LinkPreview[];
 }
 
+const NOTES_PER_PAGE = 6;
+
 const Index = () => {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: '1',
-      title: 'Understanding React Hooks',
-      content: 'React Hooks allow you to use state and other React features without writing a class component. Key hooks include useState, useEffect, and useContext.',
-      tags: ['react', 'javascript', 'programming'],
-      createdAt: new Date('2024-06-01'),
-      isFavorite: true,
-      category: 'Technology'
-    },
-    {
-      id: '2',
-      title: 'Daily Reflection',
-      content: 'Today I learned about the importance of taking breaks during coding sessions. It helps prevent burnout and improves problem-solving abilities.',
-      tags: ['personal', 'productivity', 'wellness'],
-      createdAt: new Date('2024-06-02'),
-      isFavorite: false,
-      category: 'Personal'
-    },
-    {
-      id: '3',
-      title: 'Design Principles',
-      content: 'Good design is about hierarchy, contrast, balance, and movement. These principles help create visually appealing and functional interfaces.',
-      tags: ['design', 'ui', 'principles'],
-      createdAt: new Date('2024-06-03'),
-      isFavorite: true,
-      category: 'Design'
-    }
-  ]);
+  const [allNotes, setAllNotes] = useState<Note[]>(() => {
+    // Initialize with demo notes and generate more for infinite scroll demo
+    const demoNotes = getDemoNotes();
+    const extraNotes = Array.from({ length: 20 }, (_, i) => ({
+      ...demoNotes[i % demoNotes.length],
+      id: `generated-${i}`,
+      title: `${demoNotes[i % demoNotes.length].title} ${i + 1}`,
+      createdAt: new Date(2024, 5, i + 4)
+    }));
+    return [...demoNotes, ...extraNotes];
+  });
   
+  const [displayedNotes, setDisplayedNotes] = useState<Note[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -63,18 +49,48 @@ const Index = () => {
   const { toast } = useToast();
 
   const allTags = useMemo(() => {
-    const tags = notes.flatMap(note => note.tags);
+    const tags = allNotes.flatMap(note => note.tags);
     return Array.from(new Set(tags));
-  }, [notes]);
+  }, [allNotes]);
 
   const filteredNotes = useMemo(() => {
-    return notes.filter(note => {
+    return allNotes.filter(note => {
       const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            note.content.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTag = !selectedTag || note.tags.includes(selectedTag);
       return matchesSearch && matchesTag;
     });
-  }, [notes, searchTerm, selectedTag]);
+  }, [allNotes, searchTerm, selectedTag]);
+
+  const loadMoreNotes = useCallback(() => {
+    const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
+    const endIndex = startIndex + NOTES_PER_PAGE;
+    const newNotes = filteredNotes.slice(startIndex, endIndex);
+    
+    if (currentPage === 1) {
+      setDisplayedNotes(newNotes);
+    } else {
+      setDisplayedNotes(prev => [...prev, ...newNotes]);
+    }
+  }, [filteredNotes, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedTag]);
+
+  useEffect(() => {
+    loadMoreNotes();
+  }, [loadMoreNotes]);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
+      const hasMoreNotes = displayedNotes.length < filteredNotes.length;
+      if (hasMoreNotes) {
+        setCurrentPage(prev => prev + 1);
+      }
+    }
+  }, [displayedNotes.length, filteredNotes.length]);
 
   const handleCreateNote = (noteData: Omit<Note, 'id' | 'createdAt'>) => {
     const newNote: Note = {
@@ -82,7 +98,7 @@ const Index = () => {
       id: Date.now().toString(),
       createdAt: new Date()
     };
-    setNotes(prev => [newNote, ...prev]);
+    setAllNotes(prev => [newNote, ...prev]);
     setIsCreateModalOpen(false);
     toast({
       title: "Note created!",
@@ -90,18 +106,9 @@ const Index = () => {
     });
   };
 
-  const handleToggleFavorite = (id: string) => {
-    setNotes(prev => prev.map(note => 
-      note.id === id ? { ...note, isFavorite: !note.isFavorite } : note
-    ));
-    toast({
-      title: "Note updated!",
-      description: "Favorite status changed.",
-    });
-  };
-
   const handleDeleteNote = (id: string) => {
-    setNotes(prev => prev.filter(note => note.id !== id));
+    setAllNotes(prev => prev.filter(note => note.id !== id));
+    setDisplayedNotes(prev => prev.filter(note => note.id !== id));
     toast({
       title: "Note deleted!",
       description: "Your note has been removed from your brain.",
@@ -122,7 +129,6 @@ const Index = () => {
   };
 
   const handleLogout = () => {
-    // For now, just redirect to login
     window.location.href = '/login';
   };
 
@@ -225,7 +231,7 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Notes</p>
-                <p className="text-2xl font-bold text-foreground">{notes.length}</p>
+                <p className="text-2xl font-bold text-foreground">{allNotes.length}</p>
               </div>
               <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-lg">
                 <Calendar className="h-6 w-6 text-white" />
@@ -236,11 +242,11 @@ const Index = () => {
           <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Favorites</p>
-                <p className="text-2xl font-bold text-foreground">{notes.filter(n => n.isFavorite).length}</p>
+                <p className="text-sm font-medium text-muted-foreground">With Links</p>
+                <p className="text-2xl font-bold text-foreground">{allNotes.filter(n => n.links && n.links.length > 0).length}</p>
               </div>
               <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-lg">
-                <Star className="h-6 w-6 text-white" />
+                <Share2 className="h-6 w-6 text-white" />
               </div>
             </div>
           </div>
@@ -258,18 +264,25 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Notes Grid */}
+        {/* Notes Grid with Infinite Scroll */}
         {filteredNotes.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredNotes.map(note => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onToggleFavorite={handleToggleFavorite}
-                onDelete={handleDeleteNote}
-              />
-            ))}
-          </div>
+          <ScrollArea className="h-[calc(100vh-400px)]" onScrollCapture={handleScroll}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pr-4">
+              {displayedNotes.map(note => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  onDelete={handleDeleteNote}
+                  onShare={handleShareNote}
+                />
+              ))}
+            </div>
+            {displayedNotes.length < filteredNotes.length && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Scroll to load more notes...</p>
+              </div>
+            )}
+          </ScrollArea>
         ) : (
           <div className="text-center py-12">
             <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />

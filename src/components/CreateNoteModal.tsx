@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Tag, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,18 +28,19 @@ interface CreateNoteModalProps {
 const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCreate }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [linkInput, setLinkInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [category, setCategory] = useState('');
-  const [isFavorite, setIsFavorite] = useState(false);
   const [detectedLinks, setDetectedLinks] = useState<LinkPreview[]>([]);
 
   const categories = ['Technology', 'Personal', 'Design', 'Business', 'Science', 'Other'];
 
   useEffect(() => {
-    const links = extractLinks(content);
+    const allText = `${content} ${linkInput}`;
+    const links = extractLinks(allText);
     setDetectedLinks(links);
-  }, [content]);
+  }, [content, linkInput]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -65,17 +67,17 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
         title: title.trim(),
         content: content.trim(),
         tags,
-        isFavorite,
+        isFavorite: false,
         category,
         links: detectedLinks
       });
       // Reset form
       setTitle('');
       setContent('');
+      setLinkInput('');
       setTags([]);
       setTagInput('');
       setCategory('');
-      setIsFavorite(false);
       setDetectedLinks([]);
     }
   };
@@ -85,10 +87,10 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
     // Reset form on close
     setTitle('');
     setContent('');
+    setLinkInput('');
     setTags([]);
     setTagInput('');
     setCategory('');
-    setIsFavorite(false);
     setDetectedLinks([]);
   };
 
@@ -140,10 +142,24 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Capture your thoughts, ideas, learnings... Include YouTube or Twitter links for rich previews!"
+              placeholder="Capture your thoughts, ideas, learnings..."
               rows={6}
               className="bg-white/70 border-white/20 focus:bg-white/90 resize-none"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="links" className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Add Links (YouTube, Twitter)
+            </label>
+            <Input
+              id="links"
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              placeholder="Paste YouTube or Twitter links here..."
+              className="bg-white/70 border-white/20 focus:bg-white/90"
             />
             
             {detectedLinks.length > 0 && (
@@ -198,19 +214,6 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="favorite"
-              checked={isFavorite}
-              onChange={(e) => setIsFavorite(e.target.checked)}
-              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-            />
-            <label htmlFor="favorite" className="text-sm font-medium text-foreground">
-              Mark as favorite
-            </label>
           </div>
 
           <div className="flex gap-3 pt-4">
