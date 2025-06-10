@@ -1,12 +1,13 @@
-
-import React, { useState } from 'react';
-import { X, Plus, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Tag, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { extractLinks, LinkPreview } from '@/utils/linkUtils';
+import LinkPreviewComponent from '@/components/LinkPreview';
 
 interface Note {
   title: string;
@@ -14,6 +15,7 @@ interface Note {
   tags: string[];
   isFavorite: boolean;
   category: string;
+  links?: LinkPreview[];
 }
 
 interface CreateNoteModalProps {
@@ -29,8 +31,14 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
   const [tagInput, setTagInput] = useState('');
   const [category, setCategory] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [detectedLinks, setDetectedLinks] = useState<LinkPreview[]>([]);
 
   const categories = ['Technology', 'Personal', 'Design', 'Business', 'Science', 'Other'];
+
+  useEffect(() => {
+    const links = extractLinks(content);
+    setDetectedLinks(links);
+  }, [content]);
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -58,7 +66,8 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
         content: content.trim(),
         tags,
         isFavorite,
-        category
+        category,
+        links: detectedLinks
       });
       // Reset form
       setTitle('');
@@ -67,6 +76,7 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
       setTagInput('');
       setCategory('');
       setIsFavorite(false);
+      setDetectedLinks([]);
     }
   };
 
@@ -79,11 +89,12 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
     setTagInput('');
     setCategory('');
     setIsFavorite(false);
+    setDetectedLinks([]);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-md border-white/20">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md border-white/20">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Create New Note
@@ -129,11 +140,23 @@ const CreateNoteModal: React.FC<CreateNoteModalProps> = ({ isOpen, onClose, onCr
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Capture your thoughts, ideas, learnings..."
+              placeholder="Capture your thoughts, ideas, learnings... Include YouTube or Twitter links for rich previews!"
               rows={6}
               className="bg-white/70 border-white/20 focus:bg-white/90 resize-none"
               required
             />
+            
+            {detectedLinks.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Link className="h-4 w-4" />
+                  <span>Detected Links ({detectedLinks.length})</span>
+                </div>
+                {detectedLinks.map((link, index) => (
+                  <LinkPreviewComponent key={index} preview={link} />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">

@@ -1,8 +1,11 @@
+
 import React from 'react';
 import { Star, Trash2, Calendar, Tag, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { LinkPreview } from '@/utils/linkUtils';
+import LinkPreviewComponent from '@/components/LinkPreview';
 
 interface Note {
   id: string;
@@ -12,6 +15,7 @@ interface Note {
   createdAt: Date;
   isFavorite: boolean;
   category: string;
+  links?: LinkPreview[];
 }
 
 interface NoteCardProps {
@@ -95,6 +99,20 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onToggleFavorite, onDelete, o
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
           {note.content}
         </p>
+        
+        {/* Display embedded links */}
+        {note.links && note.links.length > 0 && (
+          <div className="mb-4">
+            {note.links.slice(0, 2).map((link, index) => (
+              <LinkPreviewComponent key={index} preview={link} />
+            ))}
+            {note.links.length > 2 && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                +{note.links.length - 2} more links
+              </div>
+            )}
+          </div>
+        )}
         
         {note.tags.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">

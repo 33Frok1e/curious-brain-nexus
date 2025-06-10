@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import NoteCard from '@/components/NoteCard';
 import CreateNoteModal from '@/components/CreateNoteModal';
 import ShareModal from '@/components/ShareModal';
+import Profile from '@/components/Profile';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { LinkPreview } from '@/utils/linkUtils';
 
 interface Note {
   id: string;
@@ -17,6 +19,7 @@ interface Note {
   createdAt: Date;
   isFavorite: boolean;
   category: string;
+  links?: LinkPreview[];
 }
 
 const Index = () => {
@@ -56,6 +59,7 @@ const Index = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareNoteTitle, setShareNoteTitle] = useState<string>('');
   const [isAllNotesShare, setIsAllNotesShare] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { toast } = useToast();
 
   const allTags = useMemo(() => {
@@ -157,6 +161,7 @@ const Index = () => {
               </Button>
               <div className="flex items-center gap-1 ml-2">
                 <Button
+                  onClick={() => setIsProfileOpen(true)}
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground hover:text-foreground"
@@ -301,6 +306,11 @@ const Index = () => {
         onClose={() => setIsShareModalOpen(false)}
         noteTitle={shareNoteTitle}
         isAllNotes={isAllNotesShare}
+      />
+
+      <Profile
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
       />
     </div>
   );
