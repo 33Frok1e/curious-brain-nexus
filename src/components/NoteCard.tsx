@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2, Calendar, Tag, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,8 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
+  const navigate = useNavigate();
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -45,8 +48,19 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
     return colors[category as keyof typeof colors] || colors.Other;
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    navigate(`/note/${note.id}`);
+  };
+
   return (
-    <Card className="group bg-white/70 backdrop-blur-sm border-white/20 hover:bg-white/90 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <Card 
+      className="group bg-white/70 backdrop-blur-sm border-white/20 hover:bg-white/90 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -68,7 +82,10 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onShare(note.title)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare(note.title);
+                }}
                 className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-500"
               >
                 <Share2 className="h-4 w-4" />
@@ -77,7 +94,10 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onDelete(note.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(note.id);
+              }}
               className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
             >
               <Trash2 className="h-4 w-4" />
