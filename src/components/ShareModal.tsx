@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Share2, Copy, Users, Globe, Lock, Mail, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,13 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, noteTitle, isA
     return link;
   };
 
+  // Generate link when modal opens
+  useEffect(() => {
+    if (isOpen && !shareLink) {
+      generateShareLink();
+    }
+  }, [isOpen, shareLink]);
+
   const handleShare = () => {
     if (!isLinkEnabled) {
       toast({
@@ -43,7 +50,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, noteTitle, isA
       return;
     }
 
-    const link = generateShareLink();
+    const link = shareLink || generateShareLink();
     const emailList = emails.split(',').map(email => email.trim()).filter(Boolean);
     
     console.log('Sharing:', {
@@ -92,6 +99,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, noteTitle, isA
   const handleToggleLink = (enabled: boolean) => {
     setIsLinkEnabled(enabled);
     if (enabled) {
+      if (!shareLink) {
+        generateShareLink();
+      }
       toast({
         title: "Share link enabled",
         description: "Your share link is now active.",
@@ -122,6 +132,25 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, noteTitle, isA
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* Share Link Input with Copy */}
+          <div className="space-y-2">
+            <Label>Shareable Link</Label>
+            <div className="flex gap-2">
+              <Input 
+                value={isLinkEnabled ? shareLink : 'Link expired - Enable to generate new link'} 
+                readOnly 
+                className={`flex-1 ${!isLinkEnabled ? 'text-red-500 bg-red-50' : ''}`}
+              />
+              <Button 
+                onClick={copyToClipboard} 
+                size="sm"
+                disabled={!isLinkEnabled}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
           {/* Share Link Enable/Disable Toggle */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -204,27 +233,6 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, noteTitle, isA
               disabled={!isLinkEnabled}
             />
           </div>
-
-          {/* Share Link */}
-          {shareLink && (
-            <div className="space-y-2">
-              <Label>Share Link</Label>
-              <div className="flex gap-2">
-                <Input 
-                  value={isLinkEnabled ? shareLink : 'Link expired - Enable to generate new link'} 
-                  readOnly 
-                  className={`flex-1 ${!isLinkEnabled ? 'text-red-500 bg-red-50' : ''}`}
-                />
-                <Button 
-                  onClick={copyToClipboard} 
-                  size="sm"
-                  disabled={!isLinkEnabled}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Permissions Info */}
           <div className="bg-muted p-3 rounded-lg">
