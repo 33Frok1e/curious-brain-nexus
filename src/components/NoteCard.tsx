@@ -5,7 +5,7 @@ import { Trash2, Calendar, Tag, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { LinkPreview } from '@/utils/linkUtils';
+import { LinkPreview, extractLinks } from '@/utils/linkUtils';
 import LinkPreviewComponent from '@/components/LinkPreview';
 
 interface Note {
@@ -27,6 +27,10 @@ interface NoteCardProps {
 
 const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
   const navigate = useNavigate();
+
+  // Extract links dynamically from content
+  const extractedLinks = extractLinks(note.content);
+  const allLinks = [...(note.links || []), ...extractedLinks];
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -111,15 +115,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onDelete, onShare }) => {
           {note.content}
         </p>
         
-        {/* Display embedded links */}
-        {note.links && note.links.length > 0 && (
+        {/* Display embedded links dynamically */}
+        {allLinks.length > 0 && (
           <div className="mb-4">
-            {note.links.slice(0, 2).map((link, index) => (
-              <LinkPreviewComponent key={index} preview={link} />
+            {allLinks.slice(0, 2).map((link, index) => (
+              <LinkPreviewComponent key={`${link.url}-${index}`} preview={link} />
             ))}
-            {note.links.length > 2 && (
+            {allLinks.length > 2 && (
               <div className="mt-2 text-xs text-muted-foreground">
-                +{note.links.length - 2} more links
+                +{allLinks.length - 2} more links
               </div>
             )}
           </div>

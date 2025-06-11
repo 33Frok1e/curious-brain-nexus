@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import LinkPreviewComponent from '@/components/LinkPreview';
 import ShareModal from '@/components/ShareModal';
-import { LinkPreview, getDemoNotes } from '@/utils/linkUtils';
+import { LinkPreview, getDemoNotes, extractLinks } from '@/utils/linkUtils';
 import { useState } from 'react';
 
 interface Note {
@@ -53,6 +53,10 @@ const NoteDetails = () => {
       </div>
     );
   }
+
+  // Extract links dynamically from content
+  const extractedLinks = extractLinks(note.content);
+  const allLinks = [...(note.links || []), ...extractedLinks];
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -144,12 +148,12 @@ const NoteDetails = () => {
                 </p>
               </div>
 
-              {/* Embedded Links */}
-              {note.links && note.links.length > 0 && (
+              {/* Embedded Links - Now Dynamic */}
+              {allLinks.length > 0 && (
                 <div className="mt-8 space-y-4">
                   <h3 className="text-lg font-semibold text-foreground mb-4">Embedded Content</h3>
-                  {note.links.map((link, index) => (
-                    <LinkPreviewComponent key={index} preview={link} />
+                  {allLinks.map((link, index) => (
+                    <LinkPreviewComponent key={`${link.url}-${index}`} preview={link} />
                   ))}
                 </div>
               )}
