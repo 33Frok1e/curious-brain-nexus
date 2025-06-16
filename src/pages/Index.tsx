@@ -1,9 +1,16 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Plus, Search, Brain, Tag, Calendar, Share2, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
 import NoteCard from '@/components/NoteCard';
 import CreateNoteModal from '@/components/CreateNoteModal';
 import ShareModal from '@/components/ShareModal';
@@ -26,7 +33,7 @@ const NOTES_PER_PAGE = 6;
 
 const Index = () => {
   const [allNotes, setAllNotes] = useState<Note[]>(() => {
-    // Initialize with demo notes and generate more for infinite scroll demo
+    // Initialize with demo notes and generate more for pagination demo
     const demoNotes = getDemoNotes();
     const extraNotes = Array.from({ length: 20 }, (_, i) => ({
       ...demoNotes[i % demoNotes.length],
@@ -37,7 +44,6 @@ const Index = () => {
     return [...demoNotes, ...extraNotes];
   });
   
-  const [displayedNotes, setDisplayedNotes] = useState<Note[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -62,35 +68,16 @@ const Index = () => {
     });
   }, [allNotes, searchTerm, selectedTag]);
 
-  const loadMoreNotes = useCallback(() => {
-    const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
-    const endIndex = startIndex + NOTES_PER_PAGE;
-    const newNotes = filteredNotes.slice(startIndex, endIndex);
-    
-    if (currentPage === 1) {
-      setDisplayedNotes(newNotes);
-    } else {
-      setDisplayedNotes(prev => [...prev, ...newNotes]);
-    }
-  }, [filteredNotes, currentPage]);
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredNotes.length / NOTES_PER_PAGE);
+  const startIndex = (currentPage - 1) * NOTES_PER_PAGE;
+  const endIndex = startIndex + NOTES_PER_PAGE;
+  const currentNotes = filteredNotes.slice(startIndex, endIndex);
 
+  // Reset to first page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedTag]);
-
-  useEffect(() => {
-    loadMoreNotes();
-  }, [loadMoreNotes]);
-
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-      const hasMoreNotes = displayedNotes.length < filteredNotes.length;
-      if (hasMoreNotes) {
-        setCurrentPage(prev => prev + 1);
-      }
-    }
-  }, [displayedNotes.length, filteredNotes.length]);
 
   const handleCreateNote = (noteData: Omit<Note, 'id' | 'createdAt'>) => {
     const newNote: Note = {
@@ -108,7 +95,6 @@ const Index = () => {
 
   const handleDeleteNote = (id: string) => {
     setAllNotes(prev => prev.filter(note => note.id !== id));
-    setDisplayedNotes(prev => prev.filter(note => note.id !== id));
     toast({
       title: "Note deleted!",
       description: "Your note has been removed from your brain.",
@@ -130,6 +116,10 @@ const Index = () => {
 
   const handleLogout = () => {
     window.location.href = '/login';
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -264,11 +254,11 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Notes Grid with Infinite Scroll */}
+        {/* Notes Grid with Pagination */}
         {filteredNotes.length > 0 ? (
-          <ScrollArea className="h-[calc(100vh-400px)]" onScrollCapture={handleScroll}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pr-4">
-              {displayedNotes.map(note => (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentNotes.map(note => (
                 <NoteCard
                   key={note.id}
                   note={note}
@@ -277,12 +267,42 @@ const Index = () => {
                 />
               ))}
             </div>
-            {displayedNotes.length < filteredNotes.length && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Scroll to load more notes...</p>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => handlePageChange(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
-          </ScrollArea>
+          </div>
         ) : (
           <div className="text-center py-12">
             <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
